@@ -16,10 +16,12 @@ import com.squareup.javapoet.NameAllocator;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.lang.model.element.TypeElement;
 
 import static com.gabrielittner.auto.value.util.AutoValueUtil.error;
@@ -83,16 +85,24 @@ public class AutoValueCursorExtension extends AutoValueExtension {
             if (property.columnAdapter() != null) {
                 readMethod.addStatement(
                         "$T $N = $N.fromCursor(cursor, $S)",
-                        property.type(),
+                        property.returnType(),
                         property.humanName(),
                         columnAdapters.get(property),
                         property.columnName());
             } else if (property.supportedType()) {
-                if (property.nullable()) {
+                if (property.optional()) {
+                    readMethod.addCode(readOptionalProperty(property));
+                } else if (property.nullable()) {
                     readMethod.addCode(readNullableProperty(property));
                 } else {
                     readMethod.addCode(readProperty(property));
                 }
+            } else if (property.optional()) {
+                readMethod.addCode(
+                        "$T $N = " + property.optionalEmpty() + "; // can't be read from cursor\n",
+                        property.returnType(),
+                        property.humanName(),
+                        property.returnType());
             } else if (property.nullable()) {
                 readMethod.addCode(
                         "$T $N = null; // can't be read from cursor\n",
@@ -112,6 +122,28 @@ public class AutoValueCursorExtension extends AutoValueExtension {
         CodeBlock getValue = CodeBlock.of(property.cursorMethod(), getColumnIndex(property));
         return CodeBlock.builder()
                 .addStatement("$T $N = $L", property.type(), property.humanName(), getValue)
+                .build();
+    }
+
+    private CodeBlock readOptionalProperty(ColumnProperty property) {
+        String columnIndexVar = property.humanName() + "ColumnIndex";
+
+        TypeName rawType = property.returnType();
+        if (rawType instanceof ParameterizedTypeName) {
+            rawType = ((ParameterizedTypeName) rawType).rawType;
+        }
+
+        CodeBlock getOptionalEmpty = CodeBlock.of(property.optionalEmpty(), rawType);
+        CodeBlock runCursorMethod = CodeBlock.of(property.cursorMethod(), columnIndexVar);
+
+        CodeBlock getValue =
+                CodeBlock.builder()
+                        .add("cursor.isNull($L) ? $L : ", columnIndexVar, getOptionalEmpty)
+                        .add("$T.of($L)", rawType, runCursorMethod)
+                        .build();
+        return CodeBlock.builder()
+                .addStatement("int $L = $L", columnIndexVar, getColumnIndex(property))
+                .addStatement("$T $N = $L", property.returnType(), property.humanName(), getValue)
                 .build();
     }
 

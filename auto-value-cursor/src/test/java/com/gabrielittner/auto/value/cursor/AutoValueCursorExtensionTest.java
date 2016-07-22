@@ -2,10 +2,13 @@ package com.gabrielittner.auto.value.cursor;
 
 import com.google.auto.value.processor.AutoValueProcessor;
 import com.google.testing.compile.JavaFileObjects;
+
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
+
 import javax.tools.JavaFileObject;
-import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
@@ -71,6 +74,120 @@ public class AutoValueCursorExtensionTest {
                 + "  static AutoValue_Test createFromCursor(Cursor cursor) {\n"
                 + "    int a = cursor.getInt(cursor.getColumnIndexOrThrow(\"a\"));\n"
                 + "    String b = cursor.getString(cursor.getColumnIndexOrThrow(\"column_b\"));\n"
+                + "    return new AutoValue_Test(a, b);\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expected);
+    }
+
+    @Test
+    public void optional() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.util.Optional;\n"
+                + "@AutoValue public abstract class Test {\n"
+                + "  public static Test blah(Cursor cursor) { return null; }\n"
+                + "  public abstract int a();\n"
+                + "  public abstract Optional<String> b();\n"
+                + "}\n");
+
+        JavaFileObject expected = JavaFileObjects.forSourceString("test.AutoValue_Test", ""
+                + "package test;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.lang.String;\n"
+                + "import java.util.Optional;\n"
+                + "final class AutoValue_Test extends $AutoValue_Test {\n"
+                + "  AutoValue_Test(int a, Optional<String> b) {\n"
+                + "    super(a, b);\n"
+                + "  }\n"
+                + "  static AutoValue_Test createFromCursor(Cursor cursor) {\n"
+                + "    int a = cursor.getInt(cursor.getColumnIndexOrThrow(\"a\"));\n"
+                + "    int bColumnIndex = cursor.getColumnIndexOrThrow(\"b\");"
+                + "    Optional<String> b = cursor.isNull(bColumnIndex) ? Optional.empty() : Optional.of(cursor.getString(bColumnIndex));\n"
+                + "    return new AutoValue_Test(a, b);\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expected);
+    }
+
+    @Test
+    public void optionalNotGeneric() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.util.OptionalInt;\n"
+                + "@AutoValue public abstract class Test {\n"
+                + "  public static Test blah(Cursor cursor) { return null; }\n"
+                + "  public abstract int a();\n"
+                + "  public abstract OptionalInt b();\n"
+                + "}\n");
+
+        JavaFileObject expected = JavaFileObjects.forSourceString("test.AutoValue_Test", ""
+                + "package test;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.util.OptionalInt;\n"
+                + "final class AutoValue_Test extends $AutoValue_Test {\n"
+                + "  AutoValue_Test(int a, OptionalInt b) {\n"
+                + "    super(a, b);\n"
+                + "  }\n"
+                + "  static AutoValue_Test createFromCursor(Cursor cursor) {\n"
+                + "    int a = cursor.getInt(cursor.getColumnIndexOrThrow(\"a\"));\n"
+                + "    int bColumnIndex = cursor.getColumnIndexOrThrow(\"b\");"
+                + "    OptionalInt b = cursor.isNull(bColumnIndex) ? OptionalInt.empty() : OptionalInt.of(cursor.getInt(bColumnIndex));\n"
+                + "    return new AutoValue_Test(a, b);\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expected);
+    }
+
+    @Test
+    public void optionalColumnName() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.gabrielittner.auto.value.cursor.ColumnName;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.util.Optional;\n"
+                + "@AutoValue public abstract class Test {\n"
+                + "  public static Test blah(Cursor cursor) { return null; }\n"
+                + "  public abstract int a();\n"
+                + "  @ColumnName(\"column_b\") public abstract Optional<String> b();\n"
+                + "}\n");
+
+        JavaFileObject expected = JavaFileObjects.forSourceString("test.AutoValue_Test", ""
+                + "package test;\n"
+                + "import android.database.Cursor;\n"
+                + "import java.lang.String;\n"
+                + "import java.util.Optional;\n"
+                + "final class AutoValue_Test extends $AutoValue_Test {\n"
+                + "  AutoValue_Test(int a, Optional<String> b) {\n"
+                + "    super(a, b);\n"
+                + "  }\n"
+                + "  static AutoValue_Test createFromCursor(Cursor cursor) {\n"
+                + "    int a = cursor.getInt(cursor.getColumnIndexOrThrow(\"a\"));\n"
+                + "    int bColumnIndex = cursor.getColumnIndexOrThrow(\"column_b\");"
+                + "    Optional<String> b = cursor.isNull(bColumnIndex) ? Optional.empty() : Optional.of(cursor.getString(bColumnIndex));\n"
                 + "    return new AutoValue_Test(a, b);\n"
                 + "  }\n"
                 + "}\n");

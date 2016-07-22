@@ -8,12 +8,15 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+
 import java.util.Collections;
 import java.util.Set;
+
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 
@@ -86,12 +89,26 @@ public class AutoValueContentValuesExtension extends AutoValueExtension {
                         property.columnName(),
                         property.methodName());
             } else if (property.supportedType()) {
-                writeMethod.addStatement(
-                        "values.put($S, $L())", property.columnName(), property.methodName());
+                if (property.optional()) {
+                    writeMethod.addCode(writeOptionalProperty(property));
+                } else {
+                    writeMethod.addStatement(
+                            "values.put($S, $L())", property.columnName(), property.methodName());
+                }
             } else {
                 error(context, property, "Property has type that can't be put into ContentValues.");
             }
         }
         return writeMethod.addStatement("return values").build();
+    }
+
+    private CodeBlock writeOptionalProperty(ColumnProperty property) {
+        return CodeBlock.builder()
+                        .addStatement("$T $N = $L()", property.returnType(), property.humanName(),
+                                property.methodName())
+                        .addStatement("values.put($S, $N.isPresent() ? $N.$L : null)",
+                                property.columnName(), property.humanName(), property.humanName(),
+                                property.optionalGet())
+                        .build();
     }
 }

@@ -2,10 +2,13 @@ package com.gabrielittner.auto.value.contentvalues;
 
 import com.google.auto.value.processor.AutoValueProcessor;
 import com.google.testing.compile.JavaFileObjects;
+
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
+
 import javax.tools.JavaFileObject;
-import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
@@ -38,6 +41,84 @@ public class AutoValueContentValuesExtensionTest {
                 + "    ContentValues values = new ContentValues(2);\n"
                 + "    values.put(\"a\", a());\n"
                 + "    values.put(\"b\", b());\n"
+                + "    return values;\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expected);
+    }
+
+    @Test
+    public void optional() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "import android.content.ContentValues;\n"
+                + "import java.lang.String;\n"
+                + "import java.util.Optional;\n"
+                + "@AutoValue public abstract class Test {\n"
+                + "  public abstract Optional<String> a();\n"
+                + "  public abstract ContentValues toContentValues();\n"
+                + "}\n");
+
+        JavaFileObject expected = JavaFileObjects.forSourceString("test.AutoValue_Test", ""
+                + "package test;\n"
+                + "import android.content.ContentValues;\n"
+                + "import java.lang.Override;\n"
+                + "import java.lang.String;\n"
+                + "import java.util.Optional;\n"
+                + "final class AutoValue_Test extends $AutoValue_Test {\n"
+                + "  AutoValue_Test(Optional<String> a) {\n"
+                + "    super(a);\n"
+                + "  }\n"
+                + "  @Override\n"
+                + "  public ContentValues toContentValues() {\n"
+                + "    ContentValues values = new ContentValues(1);\n"
+                + "    Optional<String> a = a();\n"
+                + "    values.put(\"a\", a.isPresent() ? a.get() : null);\n"
+                + "    return values;\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expected);
+    }
+
+    @Test
+    public void optionalNotGeneric() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "import android.content.ContentValues;\n"
+                + "import java.util.OptionalInt;\n"
+                + "@AutoValue public abstract class Test {\n"
+                + "  public abstract OptionalInt a();\n"
+                + "  public abstract ContentValues toContentValues();\n"
+                + "}\n");
+
+        JavaFileObject expected = JavaFileObjects.forSourceString("test.AutoValue_Test", ""
+                + "package test;\n"
+                + "import android.content.ContentValues;\n"
+                + "import java.lang.Override;\n"
+                + "import java.util.OptionalInt;\n"
+                + "final class AutoValue_Test extends $AutoValue_Test {\n"
+                + "  AutoValue_Test(OptionalInt a) {\n"
+                + "    super(a);\n"
+                + "  }\n"
+                + "  @Override\n"
+                + "  public ContentValues toContentValues() {\n"
+                + "    ContentValues values = new ContentValues(1);\n"
+                + "    OptionalInt a = a();\n"
+                + "    values.put(\"a\", a.isPresent() ? a.getAsInt() : null);\n"
                 + "    return values;\n"
                 + "  }\n"
                 + "}\n");

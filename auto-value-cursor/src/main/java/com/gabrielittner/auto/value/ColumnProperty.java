@@ -6,9 +6,12 @@ import com.gabrielittner.auto.value.util.Property;
 import com.google.auto.value.extension.AutoValueExtension;
 import com.google.common.collect.ImmutableList;
 import com.squareup.javapoet.TypeName;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 
@@ -19,7 +22,7 @@ public final class ColumnProperty extends Property {
     public static ImmutableList<ColumnProperty> from(AutoValueExtension.Context context) {
         ImmutableList.Builder<ColumnProperty> values = ImmutableList.builder();
         for (Map.Entry<String, ExecutableElement> entry : context.properties().entrySet()) {
-            values.add(new ColumnProperty(entry.getKey(), entry.getValue()));
+            values.add(new ColumnProperty(context.processingEnvironment(), entry.getKey(), entry.getValue()));
         }
         return values.build();
     }
@@ -45,8 +48,8 @@ public final class ColumnProperty extends Property {
     private final String columnName;
     private final boolean supportedType;
 
-    private ColumnProperty(String humanName, ExecutableElement element) {
-        super(humanName, element);
+    private ColumnProperty(ProcessingEnvironment processingEnvironment, String humanName, ExecutableElement element) {
+        super(processingEnvironment, humanName, element);
         columnName = (String) getAnnotationValue(element, ColumnName.class, "value");
         supportedType = SUPPORTED_TYPES.contains(type());
     }

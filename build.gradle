@@ -1,6 +1,7 @@
 allprojects {
     repositories {
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
 }
 
@@ -13,7 +14,7 @@ ext.deps = [
         javapoet: 'com.squareup:javapoet:1.7.0',
         auto_value: 'com.google.auto.value:auto-value:1.3-rc1',
         auto_common: 'com.google.auto:auto-common:0.6',
-        auto_ext_util: 'com.gabrielittner.auto.value:auto-value-extension-util:0.2.1',
+        auto_ext_util: 'com.github.life-beam:auto-value-extension-util:0.2.1-lb3',
 
         auto_service: 'com.google.auto.service:auto-service:1.0-rc2',
         android: 'com.google.android:android:2.1.2',
